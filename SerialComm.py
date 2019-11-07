@@ -3,6 +3,7 @@
       
 import time
 import serial
+import unidecode
 
 class SerialComm:
     
@@ -20,7 +21,13 @@ class SerialComm:
     def send(self, msg):
         if msg:
             try:
-                self.ser.write((msg+"\n").encode())
+                msg = unidecode.unidecode(msg)
+                #msg = msg.strip('\r\n')
+                ch = '+'
+                for i in range(len(msg)):
+                    self.ser.write(msg[i].encode('utf8'))
+                    if i == len(msg)-1: self.ser.write(ch.encode('utf8'))
+                #self.ser.write((msg + '+\n').encode("utf-8"))
             except Exception as e:
                 print("[SERIAL ERROR] ", e)
                 
