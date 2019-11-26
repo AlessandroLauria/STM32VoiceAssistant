@@ -1,17 +1,21 @@
+from sys import path as syspath
+
 from gtts import gTTS
-import speech_recognition as sr
+
 import keyboard
 import os
 import time
 import urllib3
-from wireless import Wireless
 from threading import Thread, Lock
 
 from SerialComm import SerialComm
 
+#syspath.append("/usr/local/STM32VoiceAssistant/packages/")
+import speech_recognition as sr
+
 threadLock = Lock()
-#stm32_uart = SerialComm('/dev/ttyACM0', 115200)
-stm32_uart = SerialComm('/dev/tty.usbmodem14103', 115200)
+stm32_uart = SerialComm('/dev/ttyACM0', 115200)
+#stm32_uart = SerialComm('/dev/tty.usbmodem14103', 115200)
 name = "Jarvis"
 
 name_setted = 0
