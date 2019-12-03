@@ -1,17 +1,13 @@
-from sys import path as syspath
-
 from gtts import gTTS
-
+import speech_recognition as sr
 import keyboard
 import os
 import time
 import urllib3
+#from wireless import Wireless
 from threading import Thread, Lock
 
 from SerialComm import SerialComm
-
-#syspath.append("/usr/local/STM32VoiceAssistant/packages/")
-import speech_recognition as sr
 
 threadLock = Lock()
 stm32_uart = SerialComm('/dev/ttyACM0', 115200)
@@ -25,6 +21,9 @@ stm32_ready = 0
 ssid = ""
 seckey = ""
 
+command_arrived = 0
+command = None
+
 class Listener(Thread):
 
     def __init__(self):
@@ -33,10 +32,9 @@ class Listener(Thread):
         
     def speak(self, txt, file_name="./message_voice.mp3"):
         try:
-            #tts = gTTS(text=txt, lang='it')
-            #tts.save(file_name)
-            #os.system("mpg123 " + file_name)
-            print(txt)
+            tts = gTTS(text=txt, lang='it')
+            tts.save(file_name)
+            os.system("mpg123 " + file_name)
         except Exception as e:
             print("[SPEAK ERROR] ", e)
 
@@ -47,12 +45,12 @@ class Listener(Thread):
             while True:
                 if stm32_ready:
                     try:
-                        threadLock.acquire()
+                        #threadLock.acquire()
                         #global wifi_setted
                         global name
                         nm = name
                         #ws = wifi_setted
-                        threadLock.release()
+                        #threadLock.release()
 
                         #if ws:
                         
@@ -67,16 +65,19 @@ class Listener(Thread):
 
                         if keywd != -1:
                             filename = "bip.mp3"
-                            os.system("mpg123 " + filename)
+                            os.system("mpg123 /home/pi/Desktop/JARVIS/bip.mp3")
 
-                            '''if txt[keywd+len(nm):].find("spegniti")!=-1:
+                            if txt[keywd+len(nm):].find("Spegniti")!=-1:
                                 self.speak("Mi sto spegnendo")
                                 os.system("sudo shutdown now")
-                                continue'''
+                                continue
                             
                             print("[LISTENER] Command detected : ", txt[keywd+len(nm):])
                             threadLock.acquire()
-                            stm32_uart.send(txt[keywd+len(nm):] + "+")
+                            global command_arrived
+                            global command
+                            command_arrived = 1
+                            command = txt[keywd+len(nm):] + "+"
                             threadLock.release()
 
                     except Exception as e:
@@ -152,10 +153,10 @@ class Talker(Thread):
                 self.speak("Ciao, mi sono avviato", "/start_message_voice.mp3")
 
 
-            threadLock.acquire()
+            ##threadLock.acquire()
             stm32_uart.send("[NAME] send name [END NAME]+")
             stm32_ready = 1
-            threadLock.release()
+            ##threadLock.release()
 
             name_request_send = 1
 
@@ -224,7 +225,7 @@ class Talker(Thread):
         return -1
 
     def run(self):
-
+        global command_arrived
         while True:
             #threadLock.acquire()
             txt = stm32_uart.read()
@@ -233,6 +234,11 @@ class Talker(Thread):
             self.exchange_init_data_with_stm32(txt)
 
             if txt: print("[STM32] ", txt)
+            
+            if command_arrived:
+                stm32_uart.send(command)
+                command_arrived = 0
+
 
             if self.parse_speak_message(txt) != -1:
                 self.speak(self.parse_speak_message(txt))
